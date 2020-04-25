@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/fragment_stand_gen"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.abel.standgen.StandGenFragment">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/label_input_name"
+        android:text="@string/label_input_name"
+        android:singleLine="true" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:inputType="text"
+        android:ems="10"
+        android:id="@+id/input_name"
+        android:hint="@string/hint_input_name"
+        android:singleLine="true"
+        android:textSize="16sp"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:text="@string/label_output_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/label_output_name"
+        android:singleLine="true" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:inputType="none"
+        android:ems="10"
+        android:id="@+id/output_name"
+        android:hint="@string/hint_output_name"
+        android:singleLine="true"
+        android:editable="false"
+        android:longClickable="false"
+        android:linksClickable="false"
+        android:enabled="true"
+        android:scrollHorizontally="true"
+        android:focusableInTouchMode="false"
+        android:fadeScrollbars="true"
+        android:scrollbars="horizontal"
+        android:scrollIndicators="bottom"
+        android:textIsSelectable="true"
+        android:scrollbarAlwaysDrawHorizontalTrack="false"
+        android:ellipsize="none"
+        android:focusable="false"
+        android:clickable="false"
+        android:textSize="16sp"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:text="@string/btn_gen_name"
+        android:layout_height="40dp"
+        android:id="@+id/btn_gen_name"
+        android:layout_width="145dp" />
+
+    <Button
+        android:text="@string/btn_gen_stand"
+        android:layout_height="40dp"
+        android:id="@+id/btn_gen_stand"
+        android:layout_width="145dp" />
+
+    <TextView
+        android:text="@string/label_ability_link"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/label_ability_link"
+        android:textColor="@android:color/holo_red_dark"
+        android:textStyle="normal|bold"
+        android:textSize="14sp" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:inputType="none"
+        android:ems="10"
+        android:id="@+id/output_stand"
+        android:layout_weight="1"
+        android:hint="@string/hint_output_stand"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:gravity="top|left"
+        android:clickable="false"
+        android:editable="false"
+        android:longClickable="false"
+        android:linksClickable="false"
+        android:enabled="true"
+        android:ellipsize="none"
+        android:textSize="15sp" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageButton
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:srcCompat="@android:drawable/ic_menu_preferences"
+            android:id="@+id/imageButton"
+            android:layout_weight="0"
+            android:elevation="3dp"
+            android:contentDescription="@string/btn_settings_alt" />
+
+        <Button
+            android:text="@string/btn_copy"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:id="@+id/btn_copy"
+            android:layout_gravity="right"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -13,6 +13,7 @@
     <string name="err_name_not_generated">Something went wrong when generating name, try again</string>
     <string name="err_ability_not_generated">Something went wrong when generating ability, try again</string>
     <string name="err_dialog_name">Error</string>
+    <string name="btn_settings_alt">Settings</string>
 
     <!--<string name="original_reference">http://www.pages.drexel.edu/~dft29/Stand_Generator/Stand-Generation-Overdrive.html</string>-->
     <string name="fmt_stand_info">Stand Name: %1$s\n\nStand Ability: [%2$s](%3$s)\n\nPower - %4$c\n\nSpeed - %5$c\n\nRange - %6$c\n\nDurability - %7$c\n\nPrecision - %8$c\n\nPotential - %9$c\n\nDescription: %10$s</string>
@@ -20,5 +21,4 @@
     <string name="fmt_power_page">https://powerlisting.fandom.com/wiki/%1$s</string>
     <string name="random_power_page">Special:Random</string>
     <string name="stat_chars">EDCBA</string>
-    <string name="title_activity_settings">Settings</string>
 </resources>
