@@ -10,12 +10,16 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.SpannableString;
+import android.text.method.LinkMovementMethod;
+import android.text.util.Linkify;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -79,42 +83,11 @@ public class StandGenFragment extends Fragment {
         outputName = (EditText) view.findViewById(R.id.output_name);
         outputStand = (EditText) view.findViewById(R.id.output_stand);
 
-
-        view.findViewById(R.id.btn_gen_name).setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                generateName(v);
-            }
-        });
-
-        view.findViewById(R.id.btn_gen_stand).setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                generateStand(v);
-            }
-        });
-
-        view.findViewById(R.id.btn_copy).setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                copyStand(v);
-            }
-        });
-
-        view.findViewById(R.id.label_ability_link).setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                openAbilityPage(v);
-            }
-        });
+        view.findViewById(R.id.btn_gen_name).setOnClickListener(this::generateName);
+        view.findViewById(R.id.btn_gen_stand).setOnClickListener(this::generateStand);
+        view.findViewById(R.id.btn_copy).setOnClickListener(this::copyStand);
+        view.findViewById(R.id.label_ability_link).setOnClickListener(this::openAbilityPage);
+        view.findViewById(R.id.btn_info).setOnClickListener(this::showAboutDialog);
 
         return view;
     }
@@ -129,10 +102,10 @@ public class StandGenFragment extends Fragment {
     }
 
     private void handleError(String err) {
-        Log.d("HandleError", err);
+        //Log.d("HandleError", err);
         AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(getActivity());
         dlgAlert.setMessage(err);
-        dlgAlert.setTitle(getString(R.string.err_dialog_name));
+        dlgAlert.setTitle(getString(R.string.dlg_error_name));
         dlgAlert.setPositiveButton(getString(android.R.string.ok), null);
         dlgAlert.setCancelable(false);
         dlgAlert.create().show();
@@ -276,7 +249,17 @@ public class StandGenFragment extends Fragment {
         clipboard.setPrimaryClip(clip);
     }
 
-    public void openPreferences(View v) {
-        //startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+    public void showAboutDialog(View v) {
+        final SpannableString data = new SpannableString(getString(R.string.dlg_about));
+        Linkify.addLinks(data, Linkify.WEB_URLS);
+        AlertDialog dlgAlert  = new AlertDialog.Builder(getActivity())
+                .setTitle(getString(R.string.dlg_about_name))
+                .setMessage(data)
+                .setPositiveButton(getString(android.R.string.ok), null)
+                .setCancelable(false)
+                .create();
+
+        dlgAlert.show();
+        ((TextView) dlgAlert.findViewById(android.R.id.message)).setMovementMethod(LinkMovementMethod.getInstance());
     }
 }
