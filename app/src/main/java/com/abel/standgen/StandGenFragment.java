@@ -18,7 +18,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
@@ -73,6 +75,8 @@ public class StandGenFragment extends Fragment {
     private EditText inputName;
     private EditText outputName;
     private EditText outputStand;
+    private ProgressBar spinnerGenName;
+    private ProgressBar spinnerGenStand;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -88,6 +92,8 @@ public class StandGenFragment extends Fragment {
         inputName = (EditText) view.findViewById(R.id.input_name);
         outputName = (EditText) view.findViewById(R.id.output_name);
         outputStand = (EditText) view.findViewById(R.id.output_stand);
+        spinnerGenStand = (ProgressBar) view.findViewById(R.id.spinner_gen_stand);
+        spinnerGenName = (ProgressBar) view.findViewById(R.id.spinner_gen_name);
 
         view.findViewById(R.id.btn_gen_name).setOnClickListener(this::startGenerateName);
         view.findViewById(R.id.btn_gen_stand).setOnClickListener(this::startGenerateStand);
@@ -122,6 +128,7 @@ public class StandGenFragment extends Fragment {
             return;
         }
         nameGenInProgress = true;
+        spinnerGenName.setVisibility(View.VISIBLE);
         String newBandName = inputName.getText().toString();
         if (curBandName.equals(newBandName) && lastSearchSucceeded) {
             finishGenerateName(!curBandName.isEmpty());
@@ -173,6 +180,7 @@ public class StandGenFragment extends Fragment {
             handleError(getString(R.string.err_name_not_found));
         }
         nameGenInProgress = false;
+        spinnerGenName.setVisibility(View.INVISIBLE);
     }
 
     public void startGenerateStand(View v) {
@@ -180,6 +188,7 @@ public class StandGenFragment extends Fragment {
             return;
         }
         standGenInProgress = true;
+        spinnerGenStand.setVisibility(View.VISIBLE);
         StandData newStandData = new StandData();
         if (curName.isEmpty()) {
             finishGenerateStand(false);
@@ -233,6 +242,7 @@ public class StandGenFragment extends Fragment {
             handleError(getString(R.string.err_ability_not_generated));
         }
         standGenInProgress = false;
+        spinnerGenStand.setVisibility(View.INVISIBLE);
     }
 
     private void generateStandStats(StandData newStandData) {
@@ -246,60 +256,6 @@ public class StandGenFragment extends Fragment {
             throw new StandGenException();
     }
 
-
-//
-//    public void generateStand(View v) {
-//        StandData prevStandData = standData;
-//        try {
-//            standData = new StandData();
-//            if (curName.isEmpty())
-//                throw new StandGenException();
-//            standData.standName = curName;
-//            generateStandAbility();
-//            generateStandStats();
-//
-//        } catch (StandGenException e) {
-//            standData = prevStandData;
-//            handleError(getString(R.string.err_ability_not_generated));
-//        }
-//    }
-//
-//
-//    private void _assert(boolean statement) throws StandGenException {
-//        if (!statement)
-//            throw new StandGenException();
-//    }
-//
-//    private void generateStandAbility() throws StandGenException {
-//        try {
-//            String pageData = getWebPage(getString(R.string.fmt_power_page, getString(R.string.random_power_page)));
-//            int metaTagStart = pageData.indexOf("og:description");
-//            _assert(metaTagStart >= 0);
-//            int contentStart = pageData.indexOf("content", metaTagStart);
-//            _assert(contentStart >= 0);
-//            int descriptionStart = pageData.indexOf("\"", contentStart) + 1;
-//            _assert(descriptionStart >= 1);
-//            int metaTagEnd = pageData.indexOf("\" />", descriptionStart);
-//            _assert(metaTagEnd >= 0);
-//            standData.abilityDescription = pageData.substring(descriptionStart, metaTagEnd).replace("&quot;", "\"").replace("&amp;", "&");
-//
-//            // This part differs from the original, but seems to work
-//            // TODO: Maybe perform the same checks as for the ability description?
-//            int headerStart = pageData.indexOf(">", pageData.indexOf("<h1")) + 1;
-//            _assert(headerStart >= 1);
-//            int headerEnd = pageData.indexOf("</h1>", headerStart);
-//            _assert(headerEnd >= 0);
-//            standData.abilityName = pageData.substring(headerStart, headerEnd).replace("&quot;", "\"").replace("&amp;", "&");
-//            _assert(!standData.abilityName.contains("Admins"));
-//
-//            standData.setUrl();
-//        } catch (IOException e) {
-//            throw new StandGenException();
-//        }
-//    }
-//
-
-
     public void copyStand(View v) {
         String text = outputStand.getText().toString();
         if (text.isEmpty())
@@ -307,6 +263,8 @@ public class StandGenFragment extends Fragment {
         ClipboardManager clipboard = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
         ClipData clip = ClipData.newPlainText(text, text);
         clipboard.setPrimaryClip(clip);
+
+        Toast.makeText(getActivity(), R.string.toast_copy_success, Toast.LENGTH_SHORT).show();
     }
 
     public void showAboutDialog(View v) {
