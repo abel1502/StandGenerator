@@ -3,7 +3,7 @@ package com.abel.standgen;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-
+import android.util.Log;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -14,5 +14,7 @@ public class MainActivity extends AppCompatActivity {
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();  // TODO: Replace this workaround with async networking
         StrictMode.setThreadPolicy(policy);
+
+        NetworkProvider.Instance.initRequestQueue(this);
     }
 }
