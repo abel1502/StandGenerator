@@ -21,5 +21,4 @@
     <string name="fmt_itunes_search">http://itunes.apple.com/search?term=%1$s</string>
     <string name="fmt_power_page">https://powerlisting.fandom.com/wiki/%1$s</string>
     <string name="random_power_page">Special:Random</string>
-    <string name="stat_chars">EDCBA</string>
 </resources>

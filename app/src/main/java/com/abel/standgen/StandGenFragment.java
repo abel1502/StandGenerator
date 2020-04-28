@@ -20,6 +20,11 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -56,12 +61,14 @@ public class StandGenFragment extends Fragment {
         }
     }
 
+    private Random rnd = new Random();
     private ArrayList<String> curNames = new ArrayList<>();
     private String curName = "";
     private String curBandName = "";
     private Boolean lastSearchSucceeded = false;
+    private Boolean nameGenInProgress = false;
     private StandData standData = new StandData();
-    private Random rnd = new Random();
+    private Boolean standGenInProgress = false;
 
     private EditText inputName;
     private EditText outputName;
@@ -82,8 +89,8 @@ public class StandGenFragment extends Fragment {
         outputName = (EditText) view.findViewById(R.id.output_name);
         outputStand = (EditText) view.findViewById(R.id.output_stand);
 
-        view.findViewById(R.id.btn_gen_name).setOnClickListener(this::generateName);
-        view.findViewById(R.id.btn_gen_stand).setOnClickListener(this::generateStand);
+        view.findViewById(R.id.btn_gen_name).setOnClickListener(this::startGenerateName);
+        view.findViewById(R.id.btn_gen_stand).setOnClickListener(this::startGenerateStand);
         view.findViewById(R.id.btn_copy).setOnClickListener(this::copyStand);
         view.findViewById(R.id.label_ability_link).setOnClickListener(this::openAbilityPage);
         view.findViewById(R.id.btn_info).setOnClickListener(this::showAboutDialog);
@@ -110,56 +117,29 @@ public class StandGenFragment extends Fragment {
         dlgAlert.create().show();
     }
 
-    public void generateName(View v) {
-        try {
-            String _curBandName = inputName.getText().toString();
-            if (!curBandName.equals(_curBandName) || !lastSearchSucceeded) {
-                curBandName = _curBandName;
-                performItunesSearch();
-            }
-            if (curNames.size() == 0) {
-                lastSearchSucceeded = false;
-                handleError(getString(R.string.err_name_not_found));
-            } else {
-                lastSearchSucceeded = true;
-                curName = curNames.get(rnd.nextInt(curNames.size()));
-                outputName.setText(curName);
-            }
-        } catch (StandGenException e) {
-            lastSearchSucceeded = false;
-            handleError(getString(R.string.err_name_not_generated));
+    public void startGenerateName(View v) {
+        if (nameGenInProgress) {
+            return;
+        }
+        nameGenInProgress = true;
+        String newBandName = inputName.getText().toString();
+        if (curBandName.equals(newBandName) && lastSearchSucceeded) {
+            finishGenerateName(!curBandName.isEmpty());
+        } else {
+            curBandName = newBandName;
+            startItunesSearch();
         }
     }
 
-    @Nullable
-    private String getWebPage(String targetAddr) throws IOException {
-        URL target = new URL(targetAddr);
-        HttpURLConnection con;
-        con = (HttpURLConnection) target.openConnection();
-        try {
-            if (con.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                return null;
-            }
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-
-            StringBuffer stringBuffer = new StringBuffer();  // TODO: Replace with stringbuilder, unless it breaks something
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                stringBuffer.append(line);
-            }
-            return stringBuffer.toString();
-        } finally {
-            con.disconnect();
-        }
+    private void startItunesSearch() {
+        lastSearchSucceeded = false;
+        String url = getString(R.string.fmt_itunes_search, Uri.encode(curBandName));
+        JsonObjectRequest req = new JsonObjectRequest(url, this::finishItunesSearch, (error) -> {handleError(getString(R.string.err_name_not_found));});
+        NetworkProvider.Instance.performRequest(req);
     }
 
-    private JSONObject getJSON(String targetAddr) throws IOException, JSONException {
-        return new JSONObject(getWebPage(targetAddr));
-    }
-
-    private void performItunesSearch() throws StandGenException {
+    private void finishItunesSearch(JSONObject data) {
         try {
-            JSONObject data = getJSON(getString(R.string.fmt_itunes_search, Uri.encode(curBandName)));
             if (data.length() == 0)
                 throw new StandGenException();
             JSONArray results = data.getJSONArray("results");
@@ -178,36 +158,46 @@ public class StandGenFragment extends Fragment {
                 }
                 curNames.add(_curName);
             }
-        } catch (IOException | JSONException e) {
-            Log.e("MainActivity", "performItunesSearch", e);
-            throw new StandGenException();
-        }
-    }
-
-    public void generateStand(View v) {
-        StandData prevStandData = standData;
-        try {
-            standData = new StandData();
-            if (curName.isEmpty())
+            if (curNames.size() == 0)
                 throw new StandGenException();
-            standData.standName = curName;
-            generateStandAbility();
-            generateStandStats();
-            outputStand.setText(standData.getRepresentation());
-        } catch (StandGenException e) {
-            standData = prevStandData;
-            handleError(getString(R.string.err_ability_not_generated));
+            lastSearchSucceeded = true;
+        } catch (StandGenException | JSONException ignored) { }
+        finishGenerateName(lastSearchSucceeded);
+    }
+
+    private void finishGenerateName(Boolean success) {
+        if (success) {
+            curName = curNames.get(rnd.nextInt(curNames.size()));
+            outputName.setText(curName);
+        } else {
+            handleError(getString(R.string.err_name_not_found));
+        }
+        nameGenInProgress = false;
+    }
+
+    public void startGenerateStand(View v) {
+        if (standGenInProgress) {
+            return;
+        }
+        standGenInProgress = true;
+        StandData newStandData = new StandData();
+        if (curName.isEmpty()) {
+            finishGenerateStand(false);
+        } else {
+            newStandData.standName = curName;
+            generateStandStats(newStandData);
+            startGenerateAbility(newStandData);
         }
     }
 
-    private void _assert(boolean statement) throws StandGenException {
-        if (!statement)
-            throw new StandGenException();
+    private void startGenerateAbility(StandData newStandData) {
+        String url = getString(R.string.fmt_power_page, getString(R.string.random_power_page));
+        StringRequest req = new StringRequest(url, (pageData) -> {finishGenerateAbility(newStandData, pageData);}, (error) -> {handleError(getString(R.string.err_ability_not_generated));});
+        NetworkProvider.Instance.performRequest(req);
     }
 
-    private void generateStandAbility() throws StandGenException {
+    private void finishGenerateAbility(StandData newStandData, String pageData) {
         try {
-            String pageData = getWebPage(getString(R.string.fmt_power_page, getString(R.string.random_power_page)));
             int metaTagStart = pageData.indexOf("og:description");
             _assert(metaTagStart >= 0);
             int contentStart = pageData.indexOf("content", metaTagStart);
@@ -216,7 +206,7 @@ public class StandGenFragment extends Fragment {
             _assert(descriptionStart >= 1);
             int metaTagEnd = pageData.indexOf("\" />", descriptionStart);
             _assert(metaTagEnd >= 0);
-            standData.abilityDescription = pageData.substring(descriptionStart, metaTagEnd).replace("&quot;", "\"").replace("&amp;", "&");
+            newStandData.abilityDescription = pageData.substring(descriptionStart, metaTagEnd).replace("&quot;", "\"").replace("&amp;", "&");
 
             // This part differs from the original, but seems to work
             // TODO: Maybe perform the same checks as for the ability description?
@@ -224,20 +214,91 @@ public class StandGenFragment extends Fragment {
             _assert(headerStart >= 1);
             int headerEnd = pageData.indexOf("</h1>", headerStart);
             _assert(headerEnd >= 0);
-            standData.abilityName = pageData.substring(headerStart, headerEnd).replace("&quot;", "\"").replace("&amp;", "&");
-            _assert(!standData.abilityName.contains("Admins"));
+            newStandData.abilityName = pageData.substring(headerStart, headerEnd).replace("&quot;", "\"").replace("&amp;", "&");
+            _assert(!newStandData.abilityName.contains("Admins"));
 
-            standData.setUrl();
-        } catch (IOException e) {
-            throw new StandGenException();
+            newStandData.setUrl();
+
+            standData = newStandData;
+            finishGenerateStand(true);
+        } catch (StandGenException e) {
+            finishGenerateStand(false);
         }
     }
 
-    private void generateStandStats() {
+    private void finishGenerateStand(Boolean success) {
+        if (success) {
+            outputStand.setText(standData.getRepresentation());
+        } else {
+            handleError(getString(R.string.err_ability_not_generated));
+        }
+        standGenInProgress = false;
+    }
+
+    private void generateStandStats(StandData newStandData) {
         for (int i = 0; i < 6; i++) {
-            standData.stats[i] = getString(R.string.stat_chars).charAt(rnd.nextInt(5));
+            newStandData.stats[i] = "EDCBA".charAt(rnd.nextInt(5));
         }
     }
+
+    private void _assert(boolean statement) throws StandGenException {
+        if (!statement)
+            throw new StandGenException();
+    }
+
+
+//
+//    public void generateStand(View v) {
+//        StandData prevStandData = standData;
+//        try {
+//            standData = new StandData();
+//            if (curName.isEmpty())
+//                throw new StandGenException();
+//            standData.standName = curName;
+//            generateStandAbility();
+//            generateStandStats();
+//
+//        } catch (StandGenException e) {
+//            standData = prevStandData;
+//            handleError(getString(R.string.err_ability_not_generated));
+//        }
+//    }
+//
+//
+//    private void _assert(boolean statement) throws StandGenException {
+//        if (!statement)
+//            throw new StandGenException();
+//    }
+//
+//    private void generateStandAbility() throws StandGenException {
+//        try {
+//            String pageData = getWebPage(getString(R.string.fmt_power_page, getString(R.string.random_power_page)));
+//            int metaTagStart = pageData.indexOf("og:description");
+//            _assert(metaTagStart >= 0);
+//            int contentStart = pageData.indexOf("content", metaTagStart);
+//            _assert(contentStart >= 0);
+//            int descriptionStart = pageData.indexOf("\"", contentStart) + 1;
+//            _assert(descriptionStart >= 1);
+//            int metaTagEnd = pageData.indexOf("\" />", descriptionStart);
+//            _assert(metaTagEnd >= 0);
+//            standData.abilityDescription = pageData.substring(descriptionStart, metaTagEnd).replace("&quot;", "\"").replace("&amp;", "&");
+//
+//            // This part differs from the original, but seems to work
+//            // TODO: Maybe perform the same checks as for the ability description?
+//            int headerStart = pageData.indexOf(">", pageData.indexOf("<h1")) + 1;
+//            _assert(headerStart >= 1);
+//            int headerEnd = pageData.indexOf("</h1>", headerStart);
+//            _assert(headerEnd >= 0);
+//            standData.abilityName = pageData.substring(headerStart, headerEnd).replace("&quot;", "\"").replace("&amp;", "&");
+//            _assert(!standData.abilityName.contains("Admins"));
+//
+//            standData.setUrl();
+//        } catch (IOException e) {
+//            throw new StandGenException();
+//        }
+//    }
+//
+
 
     public void copyStand(View v) {
         String text = outputStand.getText().toString();
