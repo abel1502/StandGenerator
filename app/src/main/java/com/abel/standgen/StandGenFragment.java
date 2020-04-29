@@ -22,20 +22,12 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.Request;
-import com.android.volley.Response;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -56,11 +48,11 @@ public class StandGenFragment extends Fragment {
                     abilityDescription);
         }
 
-        void setUrl() {
-            if (abilityName == null)
-                return;
-            abilityUrl = getString(R.string.fmt_power_page, abilityName.replace(" ", "_"));
-        }
+//        void setUrl() {
+//            if (abilityName == null)
+//                return;
+//            abilityUrl = getString(R.string.fmt_power_page, abilityName.replace(" ", "_"));
+//        }
     }
 
     private Random rnd = new Random();
@@ -89,11 +81,11 @@ public class StandGenFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_stand_gen, container, false);
 
-        inputName = (EditText) view.findViewById(R.id.input_name);
-        outputName = (EditText) view.findViewById(R.id.output_name);
-        outputStand = (EditText) view.findViewById(R.id.output_stand);
-        spinnerGenStand = (ProgressBar) view.findViewById(R.id.spinner_gen_stand);
-        spinnerGenName = (ProgressBar) view.findViewById(R.id.spinner_gen_name);
+        inputName = view.findViewById(R.id.input_name);
+        outputName = view.findViewById(R.id.output_name);
+        outputStand = view.findViewById(R.id.output_stand);
+        spinnerGenStand = view.findViewById(R.id.spinner_gen_stand);
+        spinnerGenName = view.findViewById(R.id.spinner_gen_name);
 
         view.findViewById(R.id.btn_gen_name).setOnClickListener(this::startGenerateName);
         view.findViewById(R.id.btn_gen_stand).setOnClickListener(this::startGenerateStand);
@@ -114,6 +106,19 @@ public class StandGenFragment extends Fragment {
         dlgAlert.create().show();
     }
 
+    private void debugHandleError(String error) {
+        debugHandleError(error, null);
+    }
+
+    private void debugHandleError(String error, @Nullable Throwable thr) {
+        String data = error;
+        if (thr != null) {
+            data += " - " + thr.getMessage();
+        }
+        Log.d("DEBUG_ERR", data);
+        Toast.makeText(getActivity(), data, Toast.LENGTH_LONG).show();
+    }
+
     public void startGenerateName(View v) {
         if (nameGenInProgress) {
             return;
@@ -122,6 +127,7 @@ public class StandGenFragment extends Fragment {
         spinnerGenName.setVisibility(View.VISIBLE);
         String newBandName = inputName.getText().toString();
         if (newBandName.isEmpty()) {
+            debugHandleError("Empty name query");
             finishGenerateName(false, R.string.err_empty_query);
         } else if (curBandName.equals(newBandName) && lastSearchSucceeded) {
             finishGenerateName(true, 0);
@@ -133,15 +139,13 @@ public class StandGenFragment extends Fragment {
 
     private void startItunesSearch() {
         lastSearchSucceeded = false;
-        String url = getString(R.string.fmt_itunes_search, Uri.encode(curBandName));
-        JsonObjectRequest req = new JsonObjectRequest(url, this::finishItunesSearch, (error) -> {finishGenerateName(false, R.string.err_network);});
+        String url = getString(R.string.url_itunes_search, Uri.encode(curBandName));
+        JsonObjectRequest req = new JsonObjectRequest(url, this::finishItunesSearch, (error) -> {debugHandleError("Name search", error); finishGenerateName(false, R.string.err_network);});
         NetworkProvider.Instance.performRequest(req);
     }
 
     private void finishItunesSearch(JSONObject data) {
         try {
-            if (data.length() == 0)
-                throw new StandGenException();
             JSONArray results = data.getJSONArray("results");
             curNames.clear();
             for (int i = 0; i < results.length(); i++) {
@@ -162,9 +166,11 @@ public class StandGenFragment extends Fragment {
                 throw new StandGenException();
             lastSearchSucceeded = true;
         } catch (StandGenException e) {
+            debugHandleError("No songs found");
             finishGenerateName(false, R.string.err_empty_response);
             return;
         } catch (JSONException e) {
+            debugHandleError("Name search", e);
             finishGenerateName(false, R.string.err_network);
             return;
         }
@@ -190,6 +196,7 @@ public class StandGenFragment extends Fragment {
         spinnerGenStand.setVisibility(View.VISIBLE);
         StandData newStandData = new StandData();
         if (curName.isEmpty()) {
+            debugHandleError("Empty name");
             finishGenerateStand(false, R.string.err_empty_name);
         } else {
             newStandData.standName = curName;
@@ -199,39 +206,46 @@ public class StandGenFragment extends Fragment {
     }
 
     private void startGenerateAbility(StandData newStandData) {
-        String url = getString(R.string.fmt_power_page, getString(R.string.random_power_page));
-        StringRequest req = new StringRequest(url, (pageData) -> {finishGenerateAbility(newStandData, pageData);}, (error) -> {finishGenerateStand(false, R.string.err_network);});
+        String url = getString(R.string.url_random_power);
+        JsonObjectRequest req = new JsonObjectRequest(url, (data) -> finishGenerateAbility(newStandData, data), (error) -> {debugHandleError("Ability search 1", error); finishGenerateStand(false, R.string.err_network);});
         NetworkProvider.Instance.performRequest(req);
     }
 
-    private void finishGenerateAbility(StandData newStandData, String pageData) {
+    private void finishGenerateAbility(StandData newStandData, JSONObject data) {
+        int pageId;
         try {
-            int metaTagStart = pageData.indexOf("og:description");
-            _assert(metaTagStart >= 0);
-            int contentStart = pageData.indexOf("content", metaTagStart);
-            _assert(contentStart >= 0);
-            int descriptionStart = pageData.indexOf("\"", contentStart) + 1;
-            _assert(descriptionStart >= 1);
-            int metaTagEnd = pageData.indexOf("\" />", descriptionStart);
-            _assert(metaTagEnd >= 0);
-            newStandData.abilityDescription = pageData.substring(descriptionStart, metaTagEnd).replace("&quot;", "\"").replace("&amp;", "&");
-
-            // This part differs from the original, but seems to work
-            // TODO: Maybe perform the same checks as for the ability description?
-            int headerStart = pageData.indexOf(">", pageData.indexOf("<h1")) + 1;
-            _assert(headerStart >= 1);
-            int headerEnd = pageData.indexOf("</h1>", headerStart);
-            _assert(headerEnd >= 0);
-            newStandData.abilityName = pageData.substring(headerStart, headerEnd).replace("&quot;", "\"").replace("&amp;", "&");
-            _assert(!newStandData.abilityName.contains("Admins"));
-
-            newStandData.setUrl();
-
-            standData = newStandData;
-            finishGenerateStand(true, 0);
-        } catch (StandGenException e) {
+            pageId = data.getJSONObject("query").getJSONArray("random").getJSONObject(0).getInt("id");
+        } catch (JSONException e) {
+            debugHandleError("Ability search 1", e);
             finishGenerateStand(false, R.string.err_network);
+            return;
         }
+        startQueryAbility(newStandData, pageId);
+    }
+
+    private void startQueryAbility(StandData newStandData, int pageId) {
+        String url = getString(R.string.url_power_info, pageId, 256);
+        JsonObjectRequest req = new JsonObjectRequest(url, (data) -> finishQueryAbility(newStandData, data, pageId), (error) -> {debugHandleError("Ability Search 2", error); finishGenerateStand(false, R.string.err_network);});
+        NetworkProvider.Instance.performRequest(req);
+    }
+
+    private void finishQueryAbility(StandData newStandData, JSONObject data, int pageId) {
+        try {
+            JSONObject innerData = data.getJSONObject("items").getJSONObject(Integer.toString(pageId));
+
+            // TODO: Exclude "List of "
+            newStandData.abilityName = innerData.getString("title");
+            newStandData.abilityUrl = getString(R.string.url_power_base) + innerData.getString("url");
+            newStandData.abilityDescription = innerData.getString("abstract");
+        } catch (JSONException e) {
+            debugHandleError("Ability Search 2", e);
+            finishGenerateStand(false, R.string.err_network);
+            return;
+        }
+
+        standData = newStandData;
+        finishGenerateStand(true, 0);
+
     }
 
     private void finishGenerateStand(Boolean success, int errId) {
@@ -248,11 +262,6 @@ public class StandGenFragment extends Fragment {
         for (int i = 0; i < 6; i++) {
             newStandData.stats[i] = "EDCBA".charAt(rnd.nextInt(5));
         }
-    }
-
-    private void _assert(boolean statement) throws StandGenException {
-        if (!statement)
-            throw new StandGenException();
     }
 
     public void openAbilityPage(View v) {

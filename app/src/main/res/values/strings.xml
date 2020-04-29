@@ -7,6 +7,7 @@
     <string name="btn_gen_name">Generate Name</string>
     <string name="btn_gen_stand">Generate Stand</string>
     <string name="label_ability_link">Link to ability page</string>
+<!--    <string name="hint_output_stand">Stand data goes here in the following format:\n\nStand Name\n\nStand Ability\n\nStand Stats\n\nAbility Description</string>-->
     <string name="hint_output_stand">The stand data goes here.\n(Can be scrolled)</string>
     <string name="btn_copy">Copy to Clipboard</string>
 <!--    <string name="err_name_not_found">Search was unsuccessful, try again</string>-->
@@ -15,13 +16,14 @@
     <string name="dlg_error_name">Error</string>
     <string name="btn_settings_alt">Settings</string>
     <string name="dlg_about_name">About</string>
-    <string name="dlg_about">Stand Generator is a replica of http://www.pages.drexel.edu/~dft29/Stand_Generator/Stand-Generation-Overdrive.html (not of my authorship; currently doesn\'t work, as far as I\'m concerned - that was why I created this).\nA link to this app\'s website will (hopefully) be added here soon.\n\nCopyrights:\nThe icon is made by a reddit user u/BumbertonWang.\nThe rest of the app is made by me, Andrew Belyaev</string>
+    <string name="dlg_about">Stand Generator is based on http://www.pages.drexel.edu/~dft29/Stand_Generator/Stand-Generation-Overdrive.html (not of my authorship; currently doesn\'t work, as far as I\'m concerned - that was why I created this).\nA link to this app\'s website will (hopefully) be added here soon.\n\nCopyrights:\nThe icon is made by a reddit user u/BumbertonWang.\nThe rest of the app is made by me, Andrew Belyaev</string>
     <string name="toast_copy_success">Copied to clipboard</string>
 
     <string name="fmt_stand_info">Stand Name: %1$s\n\nStand Ability: [%2$s](%3$s)\n\nPower - %4$c\n\nSpeed - %5$c\n\nRange - %6$c\n\nDurability - %7$c\n\nPrecision - %8$c\n\nPotential - %9$c\n\nDescription: %10$s</string>
-    <string name="fmt_itunes_search">http://itunes.apple.com/search?term=%1$s</string>
-    <string name="fmt_power_page">https://powerlisting.fandom.com/wiki/%1$s</string>
-    <string name="random_power_page">Special:Random</string>
+    <string name="url_itunes_search">http://itunes.apple.com/search?term=%1$s</string>
+    <string name="url_random_power">https://powerlisting.fandom.com/api.php?action=query&amp;format=json&amp;list=random&amp;rnlimit=1&amp;rnnamespace=0</string>
+    <string name="url_power_info">https://powerlisting.fandom.com/api/v1/Articles/Details?ids=%1$d&amp;abstract=%2$d</string>
+    <string name="url_power_base">https://powerlisting.fandom.com</string>
 
 
     <string name="err_empty_query">Band name cannot be empty</string>
