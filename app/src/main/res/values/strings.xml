@@ -9,17 +9,24 @@
     <string name="label_ability_link">Link to ability page</string>
     <string name="hint_output_stand">The stand data goes here.\n(Can be scrolled)</string>
     <string name="btn_copy">Copy to Clipboard</string>
-    <string name="err_name_not_found">Search was unsuccessful, try again</string>
-    <string name="err_name_not_generated">Something went wrong when generating name, try again</string>
-    <string name="err_ability_not_generated">Something went wrong when generating ability, try again</string>
+<!--    <string name="err_name_not_found">Search was unsuccessful, try again</string>-->
+<!--    <string name="err_name_not_generated">Something went wrong when generating a name, try again</string>-->
+<!--    <string name="err_ability_not_generated">Something went wrong when generating a stand, try again</string>-->
     <string name="dlg_error_name">Error</string>
     <string name="btn_settings_alt">Settings</string>
     <string name="dlg_about_name">About</string>
-    <string name="dlg_about">Stand Generator is a replica of http://www.pages.drexel.edu/~dft29/Stand_Generator/Stand-Generation-Overdrive.html (not of my authorship; currently doesn\'t work, as far as I\'m concerned - that was why I created this).\nA link to this app\'s website will (hopefully) be added here soon.</string>
+    <string name="dlg_about">Stand Generator is a replica of http://www.pages.drexel.edu/~dft29/Stand_Generator/Stand-Generation-Overdrive.html (not of my authorship; currently doesn\'t work, as far as I\'m concerned - that was why I created this).\nA link to this app\'s website will (hopefully) be added here soon.\n\nCopyrights:\nThe icon is made by a reddit user r/BumbertonWang.\nThe rest of the app is made by me, Andrew Belyaev</string>
     <string name="toast_copy_success">Copied to clipboard</string>
 
     <string name="fmt_stand_info">Stand Name: %1$s\n\nStand Ability: [%2$s](%3$s)\n\nPower - %4$c\n\nSpeed - %5$c\n\nRange - %6$c\n\nDurability - %7$c\n\nPrecision - %8$c\n\nPotential - %9$c\n\nDescription: %10$s</string>
     <string name="fmt_itunes_search">http://itunes.apple.com/search?term=%1$s</string>
     <string name="fmt_power_page">https://powerlisting.fandom.com/wiki/%1$s</string>
     <string name="random_power_page">Special:Random</string>
+
+
+    <string name="err_empty_query">Band name cannot be empty</string>
+    <string name="err_network">A network error has occurred. Check your internet connection</string>
+    <string name="err_empty_response">No songs were found. Try using a different query</string>
+    <string name="err_empty_name">Stand name cannot be empty. Generate a name with the \"Generate Name\" button</string>
+
 </resources>

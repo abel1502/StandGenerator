@@ -104,19 +104,10 @@ public class StandGenFragment extends Fragment {
         return view;
     }
 
-    public void openAbilityPage(View v) {
-        String url = standData.abilityUrl;
-        if (url == null)
-            return;
-        Intent i = new Intent(Intent.ACTION_VIEW);
-        i.setData(Uri.parse(url));
-        startActivity(i);
-    }
-
-    private void handleError(String err) {
+    private void handleError(int errId) {
         //Log.d("HandleError", err);
         AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(getActivity());
-        dlgAlert.setMessage(err);
+        dlgAlert.setMessage(getString(errId));
         dlgAlert.setTitle(getString(R.string.dlg_error_name));
         dlgAlert.setPositiveButton(getString(android.R.string.ok), null);
         dlgAlert.setCancelable(false);
@@ -130,8 +121,10 @@ public class StandGenFragment extends Fragment {
         nameGenInProgress = true;
         spinnerGenName.setVisibility(View.VISIBLE);
         String newBandName = inputName.getText().toString();
-        if (curBandName.equals(newBandName) && lastSearchSucceeded) {
-            finishGenerateName(!curBandName.isEmpty());
+        if (newBandName.isEmpty()) {
+            finishGenerateName(false, R.string.err_empty_query);
+        } else if (curBandName.equals(newBandName) && lastSearchSucceeded) {
+            finishGenerateName(true, 0);
         } else {
             curBandName = newBandName;
             startItunesSearch();
@@ -141,7 +134,7 @@ public class StandGenFragment extends Fragment {
     private void startItunesSearch() {
         lastSearchSucceeded = false;
         String url = getString(R.string.fmt_itunes_search, Uri.encode(curBandName));
-        JsonObjectRequest req = new JsonObjectRequest(url, this::finishItunesSearch, (error) -> {handleError(getString(R.string.err_name_not_found));});
+        JsonObjectRequest req = new JsonObjectRequest(url, this::finishItunesSearch, (error) -> {finishGenerateName(false, R.string.err_network);});
         NetworkProvider.Instance.performRequest(req);
     }
 
@@ -168,16 +161,22 @@ public class StandGenFragment extends Fragment {
             if (curNames.size() == 0)
                 throw new StandGenException();
             lastSearchSucceeded = true;
-        } catch (StandGenException | JSONException ignored) { }
-        finishGenerateName(lastSearchSucceeded);
+        } catch (StandGenException e) {
+            finishGenerateName(false, R.string.err_empty_response);
+            return;
+        } catch (JSONException e) {
+            finishGenerateName(false, R.string.err_network);
+            return;
+        }
+        finishGenerateName(true, 0);
     }
 
-    private void finishGenerateName(Boolean success) {
+    private void finishGenerateName(Boolean success, int errId) {
         if (success) {
             curName = curNames.get(rnd.nextInt(curNames.size()));
             outputName.setText(curName);
         } else {
-            handleError(getString(R.string.err_name_not_found));
+            handleError(errId);
         }
         nameGenInProgress = false;
         spinnerGenName.setVisibility(View.INVISIBLE);
@@ -191,7 +190,7 @@ public class StandGenFragment extends Fragment {
         spinnerGenStand.setVisibility(View.VISIBLE);
         StandData newStandData = new StandData();
         if (curName.isEmpty()) {
-            finishGenerateStand(false);
+            finishGenerateStand(false, R.string.err_empty_name);
         } else {
             newStandData.standName = curName;
             generateStandStats(newStandData);
@@ -201,7 +200,7 @@ public class StandGenFragment extends Fragment {
 
     private void startGenerateAbility(StandData newStandData) {
         String url = getString(R.string.fmt_power_page, getString(R.string.random_power_page));
-        StringRequest req = new StringRequest(url, (pageData) -> {finishGenerateAbility(newStandData, pageData);}, (error) -> {handleError(getString(R.string.err_ability_not_generated));});
+        StringRequest req = new StringRequest(url, (pageData) -> {finishGenerateAbility(newStandData, pageData);}, (error) -> {finishGenerateStand(false, R.string.err_network);});
         NetworkProvider.Instance.performRequest(req);
     }
 
@@ -229,17 +228,17 @@ public class StandGenFragment extends Fragment {
             newStandData.setUrl();
 
             standData = newStandData;
-            finishGenerateStand(true);
+            finishGenerateStand(true, 0);
         } catch (StandGenException e) {
-            finishGenerateStand(false);
+            finishGenerateStand(false, R.string.err_network);
         }
     }
 
-    private void finishGenerateStand(Boolean success) {
+    private void finishGenerateStand(Boolean success, int errId) {
         if (success) {
             outputStand.setText(standData.getRepresentation());
         } else {
-            handleError(getString(R.string.err_ability_not_generated));
+            handleError(errId);
         }
         standGenInProgress = false;
         spinnerGenStand.setVisibility(View.INVISIBLE);
@@ -254,6 +253,15 @@ public class StandGenFragment extends Fragment {
     private void _assert(boolean statement) throws StandGenException {
         if (!statement)
             throw new StandGenException();
+    }
+
+    public void openAbilityPage(View v) {
+        String url = standData.abilityUrl;
+        if (url == null)
+            return;
+        Intent i = new Intent(Intent.ACTION_VIEW);
+        i.setData(Uri.parse(url));
+        startActivity(i);
     }
 
     public void copyStand(View v) {
