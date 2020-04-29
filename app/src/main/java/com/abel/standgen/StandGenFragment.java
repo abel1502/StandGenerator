@@ -116,7 +116,9 @@ public class StandGenFragment extends Fragment {
             data += " - " + thr.getMessage();
         }
         Log.d("DEBUG_ERR", data);
-        Toast.makeText(getActivity(), data, Toast.LENGTH_LONG).show();
+        if (BuildConfig.DEBUG) {
+            Toast.makeText(getActivity(), data, Toast.LENGTH_LONG).show();
+        }
     }
 
     public void startGenerateName(View v) {
