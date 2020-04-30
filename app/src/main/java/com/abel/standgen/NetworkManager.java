@@ -187,8 +187,13 @@ class ItunesDeserializer implements JsonDeserializer<List<ItunesResult>> {
 }
 
 class NetworkManager {
+    final static String itunesBaseUrl = "http://itunes.apple.com";
+    final static String powerBaseUrl = "https://powerlisting.fandom.com";
+
     private static Retrofit itunesRetrofit;
+    private static ItunesService itunesService;
     private static Retrofit powerRetrofit;
+    private static PowerService powerService;
 
     static Retrofit getItunesRetrofit() {
         if (itunesRetrofit == null) {
@@ -196,11 +201,18 @@ class NetworkManager {
                     .registerTypeAdapter(ItunesResult.listOfT, new ItunesDeserializer())
                     .create();
             itunesRetrofit = new retrofit2.Retrofit.Builder()
-                    .baseUrl("http://itunes.apple.com")
+                    .baseUrl(itunesBaseUrl)
                     .addConverterFactory(GsonConverterFactory.create(gson))
                     .build();
         }
         return itunesRetrofit;
+    }
+
+    static ItunesService getItunesService() {
+        if (itunesService == null) {
+            itunesService = getItunesRetrofit().create(ItunesService.class);
+        }
+        return itunesService;
     }
 
     static Retrofit getPowerRetrofit() {
@@ -210,22 +222,29 @@ class NetworkManager {
                     .registerTypeAdapter(PowerInfoResult.class, new PowerInfoDeserializer())
                     .create();
             powerRetrofit = new retrofit2.Retrofit.Builder()
-                    .baseUrl("https://powerlisting.fandom.com")
+                    .baseUrl(powerBaseUrl)
                     .addConverterFactory(GsonConverterFactory.create(gson))
                     .build();
         }
         return powerRetrofit;
     }
+
+    static PowerService getPowerService() {
+        if (powerService == null) {
+            powerService = getPowerRetrofit().create(PowerService.class);
+        }
+        return powerService;
+    }
 }
 
 interface ItunesService {
     @GET("/search?media=music")
-    Call<List<ItunesResult>> search(@Query("term") String term);
+    Call<List<ItunesResult>> getSearch(@Query("term") String term);
 }
 
 interface PowerService {
     @GET("/api.php?action=query&format=json&list=random&rnlimit=1&rnnamespace=0")
-    Call<PowerRandomResult> search();
+    Call<PowerRandomResult> getRandom();
 
     @GET("/api/v1/Articles/Details")
     Call<PowerInfoResult> getInfo(@Query("ids") int id, @Query("abstract") int descrLength);
