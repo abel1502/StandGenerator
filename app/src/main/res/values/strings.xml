@@ -20,10 +20,10 @@
     <string name="toast_copy_success">Copied to clipboard</string>
 
     <string name="fmt_stand_info">Stand Name: %1$s\n\nStand Ability: [%2$s](%3$s)\n\nPower - %4$c\n\nSpeed - %5$c\n\nRange - %6$c\n\nDurability - %7$c\n\nPrecision - %8$c\n\nPotential - %9$c\n\nDescription: %10$s</string>
-    <string name="url_itunes_search">http://itunes.apple.com/search?term=%1$s</string>
-    <string name="url_random_power">https://powerlisting.fandom.com/api.php?action=query&amp;format=json&amp;list=random&amp;rnlimit=1&amp;rnnamespace=0</string>
-    <string name="url_power_info">https://powerlisting.fandom.com/api/v1/Articles/Details?ids=%1$d&amp;abstract=%2$d</string>
-    <string name="url_power_base">https://powerlisting.fandom.com</string>
+<!--    <string name="url_random_power">https://powerlisting.fandom.com/api.php?action=query&amp;format=json&amp;list=random&amp;rnlimit=1&amp;rnnamespace=0</string>-->
+<!--    <string name="url_power_info">https://powerlisting.fandom.com/api/v1/Articles/Details?ids=%1$d&amp;abstract=%2$d</string>-->
+<!--    <string name="url_power_base">https://powerlisting.fandom.com</string>-->
+<!--    <string name="url_itunes_base">http://itunes.apple.com/search?term=%1$s</string>-->
 
 
     <string name="err_empty_query">Band name cannot be empty</string>
