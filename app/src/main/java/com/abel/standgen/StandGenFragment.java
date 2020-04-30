@@ -22,14 +22,19 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.toolbox.JsonObjectRequest;
+//import com.android.volley.toolbox.JsonObjectRequest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class StandGenFragment extends Fragment {
     class StandData {
@@ -47,12 +52,6 @@ public class StandGenFragment extends Fragment {
                     stats[0], stats[1], stats[2], stats[3], stats[4], stats[5],
                     abilityDescription);
         }
-
-//        void setUrl() {
-//            if (abilityName == null)
-//                return;
-//            abilityUrl = getString(R.string.fmt_power_page, abilityName.replace(" ", "_"));
-//        }
     }
 
     private Random rnd = new Random();
@@ -87,8 +86,8 @@ public class StandGenFragment extends Fragment {
         spinnerGenStand = view.findViewById(R.id.spinner_gen_stand);
         spinnerGenName = view.findViewById(R.id.spinner_gen_name);
 
-        view.findViewById(R.id.btn_gen_name).setOnClickListener(this::startGenerateName);
-        view.findViewById(R.id.btn_gen_stand).setOnClickListener(this::startGenerateStand);
+        view.findViewById(R.id.btn_gen_name).setOnClickListener(this::generateName);
+        view.findViewById(R.id.btn_gen_stand).setOnClickListener(this::generateStand);
         view.findViewById(R.id.btn_copy).setOnClickListener(this::copyStand);
         view.findViewById(R.id.label_ability_link).setOnClickListener(this::openAbilityPage);
         view.findViewById(R.id.btn_info).setOnClickListener(this::showAboutDialog);
@@ -116,10 +115,12 @@ public class StandGenFragment extends Fragment {
             data += " - " + thr.getMessage();
         }
         Log.d("DEBUG_ERR", data);
-        Toast.makeText(getActivity(), data, Toast.LENGTH_LONG).show();
+        if (BuildConfig.DEBUG) {
+            Toast.makeText(getActivity(), data, Toast.LENGTH_LONG).show();
+        }
     }
 
-    public void startGenerateName(View v) {
+    public void generateName(View v) {
         if (nameGenInProgress) {
             return;
         }
@@ -129,55 +130,54 @@ public class StandGenFragment extends Fragment {
         if (newBandName.isEmpty()) {
             debugHandleError("Empty name query");
             finishGenerateName(false, R.string.err_empty_query);
-        } else if (curBandName.equals(newBandName) && lastSearchSucceeded) {
+            return;
+        }
+        if (curBandName.equals(newBandName) && lastSearchSucceeded) {
             finishGenerateName(true, 0);
         } else {
+            lastSearchSucceeded = false;
             curBandName = newBandName;
-            startItunesSearch();
+            Call<List<ItunesResult>> call = NetworkManager.getItunesService().getSearch(curBandName);
+            call.enqueue(new Callback<List<ItunesResult>>() {
+                @Override
+                public void onResponse(@NonNull Call<List<ItunesResult>> call, @NonNull Response<List<ItunesResult>> response) {
+                    curNames.clear();
+                    List<ItunesResult> results = response.body();
+                    if (results == null) {
+                        debugHandleError("Name search - empty body");
+                        finishGenerateName(false, R.string.err_network);
+                        return;
+                    }
+                    for (ItunesResult item : results) {
+                        String _curName = item.getTrackCensoredName();
+                        int tmp = _curName.indexOf("(");
+                        if (tmp != -1) {
+                            _curName = _curName.substring(0, tmp);
+                        }
+                        if (_curName.equals("Intro") || _curName.isEmpty()) {
+                            continue;
+                        }
+                        curNames.add(_curName);
+                    }
+                    if (curNames.isEmpty()) {
+                        debugHandleError("No songs found");
+                        finishGenerateName(false, R.string.err_empty_response);
+                        return;
+                    }
+                    lastSearchSucceeded = true;
+                    finishGenerateName(true, 0);
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<List<ItunesResult>> call, @NonNull Throwable t) {
+                    debugHandleError("Name search", t);
+                    finishGenerateName(false, R.string.err_network);
+                }
+            });
         }
     }
 
-    private void startItunesSearch() {
-        lastSearchSucceeded = false;
-        String url = getString(R.string.url_itunes_search, Uri.encode(curBandName));
-        JsonObjectRequest req = new JsonObjectRequest(url, this::finishItunesSearch, (error) -> {debugHandleError("Name search", error); finishGenerateName(false, R.string.err_network);});
-        NetworkProvider.Instance.performRequest(req);
-    }
-
-    private void finishItunesSearch(JSONObject data) {
-        try {
-            JSONArray results = data.getJSONArray("results");
-            curNames.clear();
-            for (int i = 0; i < results.length(); i++) {
-                JSONObject item = results.getJSONObject(i);
-                if (!item.getString("wrapperType").equals("track"))
-                    continue;
-                String _curName = item.getString("trackCensoredName");
-                int tmp = _curName.indexOf("(");
-                if (tmp != -1) {
-                    _curName = _curName.substring(0, tmp);
-                }
-                if (_curName.equals("Intro") || _curName.isEmpty()) {
-                    continue;
-                }
-                curNames.add(_curName);
-            }
-            if (curNames.size() == 0)
-                throw new StandGenException();
-            lastSearchSucceeded = true;
-        } catch (StandGenException e) {
-            debugHandleError("No songs found");
-            finishGenerateName(false, R.string.err_empty_response);
-            return;
-        } catch (JSONException e) {
-            debugHandleError("Name search", e);
-            finishGenerateName(false, R.string.err_network);
-            return;
-        }
-        finishGenerateName(true, 0);
-    }
-
-    private void finishGenerateName(Boolean success, int errId) {
+    public void finishGenerateName(Boolean success, int errId) {
         if (success) {
             curName = curNames.get(rnd.nextInt(curNames.size()));
             outputName.setText(curName);
@@ -188,7 +188,7 @@ public class StandGenFragment extends Fragment {
         spinnerGenName.setVisibility(View.INVISIBLE);
     }
 
-    public void startGenerateStand(View v) {
+    public void generateStand(View v) {
         if (standGenInProgress) {
             return;
         }
@@ -201,51 +201,59 @@ public class StandGenFragment extends Fragment {
         } else {
             newStandData.standName = curName;
             generateStandStats(newStandData);
-            startGenerateAbility(newStandData);
+
+            Call<PowerRandomResult> call = NetworkManager.getPowerService().getRandom();
+            call.enqueue(new Callback<PowerRandomResult>() {
+                @Override
+                public void onResponse(@NonNull Call<PowerRandomResult> call, @NonNull Response<PowerRandomResult> response) {
+                    PowerRandomResult result = response.body();
+                    if (result == null) {
+                        debugHandleError("Ability search 1 - empty body");
+                        finishGenerateStand(false, R.string.err_network);
+                        return;
+                    }
+                    continueGenerateStand(newStandData, result.getId());
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<PowerRandomResult> call, @NonNull Throwable t) {
+                    debugHandleError("Ability search 1", t);
+                    finishGenerateStand(false, R.string.err_network);
+                }
+            });
         }
     }
 
-    private void startGenerateAbility(StandData newStandData) {
-        String url = getString(R.string.url_random_power);
-        JsonObjectRequest req = new JsonObjectRequest(url, (data) -> finishGenerateAbility(newStandData, data), (error) -> {debugHandleError("Ability search 1", error); finishGenerateStand(false, R.string.err_network);});
-        NetworkProvider.Instance.performRequest(req);
-    }
+    private void continueGenerateStand(StandData newStandData, int pageId) {
+        Call<PowerInfoResult> call = NetworkManager.getPowerService().getInfo(pageId, 300);
+        call.enqueue(new Callback<PowerInfoResult>() {
+            @Override
+            public void onResponse(@NonNull Call<PowerInfoResult> call, @NonNull Response<PowerInfoResult> response) {
+                PowerInfoResult result = response.body();
+                if (result == null) {
+                    debugHandleError("Ability search 2 - empty body");
+                    finishGenerateStand(false, R.string.err_network);
+                    return;
+                }
+                newStandData.abilityName = result.getTitle();
+                if (newStandData.abilityName.contains("List of")) {
+                    debugHandleError("List instead of ability");
+                    finishGenerateStand(false, R.string.err_bad_ability);
+                    return;
+                }
+                newStandData.abilityUrl = NetworkManager.powerBaseUrl + result.getUrl();
+                newStandData.abilityDescription = result.getDescription();
 
-    private void finishGenerateAbility(StandData newStandData, JSONObject data) {
-        int pageId;
-        try {
-            pageId = data.getJSONObject("query").getJSONArray("random").getJSONObject(0).getInt("id");
-        } catch (JSONException e) {
-            debugHandleError("Ability search 1", e);
-            finishGenerateStand(false, R.string.err_network);
-            return;
-        }
-        startQueryAbility(newStandData, pageId);
-    }
+                standData = newStandData;
+                finishGenerateStand(true, 0);
+            }
 
-    private void startQueryAbility(StandData newStandData, int pageId) {
-        String url = getString(R.string.url_power_info, pageId, 256);
-        JsonObjectRequest req = new JsonObjectRequest(url, (data) -> finishQueryAbility(newStandData, data, pageId), (error) -> {debugHandleError("Ability Search 2", error); finishGenerateStand(false, R.string.err_network);});
-        NetworkProvider.Instance.performRequest(req);
-    }
-
-    private void finishQueryAbility(StandData newStandData, JSONObject data, int pageId) {
-        try {
-            JSONObject innerData = data.getJSONObject("items").getJSONObject(Integer.toString(pageId));
-
-            // TODO: Exclude "List of "
-            newStandData.abilityName = innerData.getString("title");
-            newStandData.abilityUrl = getString(R.string.url_power_base) + innerData.getString("url");
-            newStandData.abilityDescription = innerData.getString("abstract");
-        } catch (JSONException e) {
-            debugHandleError("Ability Search 2", e);
-            finishGenerateStand(false, R.string.err_network);
-            return;
-        }
-
-        standData = newStandData;
-        finishGenerateStand(true, 0);
-
+            @Override
+            public void onFailure(@NonNull Call<PowerInfoResult> call, @NonNull Throwable t) {
+                debugHandleError("Ability search 2", t);
+                finishGenerateStand(false, R.string.err_network);
+            }
+        });
     }
 
     private void finishGenerateStand(Boolean success, int errId) {

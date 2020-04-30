@@ -12,6 +12,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        NetworkProvider.Instance.initRequestQueue(this);
+        //NetworkProvider.Instance.initRequestQueue(this);
     }
 }
