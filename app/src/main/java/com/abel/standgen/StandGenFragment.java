@@ -31,8 +31,6 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-//import com.android.volley.toolbox.JsonObjectRequest;
-
 public class StandGenFragment extends Fragment {
     class StandData {
         String standName;
